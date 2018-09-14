@@ -1,0 +1,552 @@
+---
+title: "Standardkirjakujude levik Eesti ühiskonnas 1880‒1920"
+subtitle: ""
+author: "Peeter Tinits"
+date: "Mõjutusi ja muutusi keeles<br>Narva-Jõesuu, 14.09.2018"
+output:
+  xaringan::moon_reader:
+    css: ["default", "mytheme.css"]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+source("0_libraries.R")
+options(htmltools.dir.version = FALSE)
+with_autor_data<-fread("../data/interim/with_autor_data_temp.tsv",sep="\t")
+diffs<-fread("bookdown/diffs_temp.tsv",sep="\t")
+diffs2<-fread("bookdown/diffs2_temp.tsv",sep="\t")
+
+```
+class:  left, middle
+
+## Miks 1880-1920
+
+- Laia eestikeelse kirjakogukonna kerkimine
+- Probleemid variantsusega
+- Linnastumine
+- Enne normatiivset kultuuri, pärast "talupojakeelt"
+
+---
+class: left, middle
+
+## Mis varieerus?
+
+- Ortograafilised (w/v, auu/au, õuu/õu, ial/iial, herra/härra)
+- Murdelised (hää/hea, tõeste/tõesti, naene/naine, nüid/nüüd, om/on)
+
+---
+
+## Variatsioon korpustes
+
+```{r, echo=F,warning=F,message=F}
+#üks näidisgraafik.
+
+p1<-diffs%>%filter(collection=="vanakorp"&decade<1919)%>%filter(variable=="õuu")%>%
+  ggplot(aes(x=aeg,y=value, text =paste0("title:", Nime.normitud.kuju, "\ntitle:", comptitle, "\n", value, "\n", value_uniques)))+
+  geom_jitter(alpha=0.2)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  facet_wrap(~variable)+
+  labs(title=paste0("Õuu-/õu- ajas"))
+
+p2<-diffs%>%filter(aeg>1890&aeg<1930)%>%filter(variable=="õuu")%>%group_by(aeg,variable) %>% summarise(V1=mean(value,na.rm=T))%>%
+  ggplot(aes(x=aeg,y=V1))+
+  geom_point(alpha=0.2)+
+  stat_smooth(se = FALSE)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  facet_wrap(~variable)+
+  labs(title=paste0("Õuu/õu ajas"))
+
+
+s1 <-ggplotly(p1)
+s2 <-ggplotly(p2)
+
+subplot(s1,s2)
+
+
+```
+
+
+---
+
+## Korpused
+
+```{r simple vanakorp, echo=F,warning=F}
+var <- colnames(with_autor_data)[30:46]
+var2 <- var[c(1:4,6:13,15:17)]
+var2_seq <- var2[c(1,11,12,8,5,9,4,3,6,2,14,13,10,7,15)]
+var3 <- colnames(with_autor_data)[47:63]
+var4 <- var3[c(1:4,6:13,15:17)]
+var4_seq <- str_replace(var4[c(1,11,12,8,5,9,4,3,6,2,14,13,10,7,15)],"_uniques","")
+
+
+p<- melt(with_autor_data,id.vars = c("decade","RRid","collection"),measure.vars=var2)%>%mutate(variable=factor(variable,levels=var2_seq))%>%filter(collection=="vanakorp"&decade<1919)%>%mutate(Ww_var=NA)%>%#filter(variable!="Ww_var")%>%
+  group_by(decade,variable)%>%summarise(mean=mean(value,na.rm=T))%>%mutate(variable=factor(variable,levels=var2_seq))%>%
+  ggplot(aes(x=decade,y=mean))+
+  geom_bar(alpha=0.8,stat="identity")+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  facet_wrap(~variable)+
+  #labs(title=paste0("Variation of ",var[i]))+
+  theme_bw()
+
+#ggplotly(p)
+p
+
+```
+
+---
+
+## Korpused
+
+```{r detailed vanakorp, echo=F,warning=F}
+
+p <-diffs%>%mutate(variable=factor(variable,levels=var4_seq))%>%filter(collection=="vanakorp"&decade<1919)%>%#filter(variable!="Ww_var")%>%
+  ggplot(aes(x=aeg,y=value, text =paste0("title:", Nime.normitud.kuju, "\ntitle:", comptitle, "\n", value, "\n", value_uniques)))+
+  geom_point(alpha=0.2)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  facet_wrap(~variable)#+
+  #labs(title=paste0("Variation of selected"))
+ggplotly(p)
+```
+
+
+---
+
+## Korpused
+
+
+```{r, echo=F,warning=F,fig.width=10}
+
+#fwrite(set_unique,"set_unique_temp.tsv",sep="\t")
+
+set_unique<-fread("bookdown//set_unique_temp.tsv",sep="\t")  
+
+p3<- set_unique[!is.na(autor_name)&autor_name!=""][,.N,by=autor_name][,.(nn=.N),by=N][order(N)][N>9,nn:=sum(nn)][N<11][,N:=factor(N,levels=unique(N))] %>%#
+    ggplot(aes(y=nn,x=N))+
+    geom_bar(stat="identity",position="dodge")+
+    coord_flip()+
+#  coord_cartesian(ylim=0,200)+
+    theme_bw()+
+  labs(x="Teoseid",y="Autoreid")+
+    NULL
+  
+
+#all cities with more than 10 books in corpus
+plotdata_kohad <- set_unique[!is.na(koht)&koht!=""][,.N,by=koht][order(N)] [,koht:=str_replace(koht,"%20linn|%20alev","")][,koht:=factor(koht,levels=unique(koht))][N>10]
+p4<-plotdata_kohad %>%
+    ggplot(aes(y=N,x=koht))+
+    geom_bar(stat="identity",position="dodge")+
+    geom_text(data=plotdata_kohad[(nrow(plotdata_kohad)-1):nrow(plotdata_kohad)], aes(label=N),size = 3, position = position_stack(vjust = 1.05))+
+    geom_text(data=plotdata_kohad[!(nrow(plotdata_kohad)-1):nrow(plotdata_kohad)],aes(label=N),size = 3, hjust = -0.5)+# )+
+    #coord_cartesian(ylim=c(0,2700))+
+    coord_flip()+
+    theme_bw()+
+    NULL
+   
+gridExtra::grid.arrange(p3,p4,nrow=1,ncol=2)
+
+
+
+```
+
+---
+
+## Korpused
+
+```{r corpus in context, echo=F,warning=F,message=F,fig.width=10}
+#,fig.asp=0.5
+old2<- fread("old2_ERB_temp.tsv",sep="\t")
+old2_unique <- unique(old2[,.(aeg,RRid)])
+
+p1 <- set_unique[,.N,by=aeg][,set:="corpus"] %>%
+#rbind(old2_unique[,.N,by=aeg][,set:="totals"]) %>%
+  ggplot(aes(x=aeg,y=N,fill=set))+
+  geom_bar(stat="identity",position="dodge")+
+  scale_fill_manual(values=c("black","grey"))+
+  theme_bw()
+  
+
+
+p2 <- set_unique[,.N,by=aeg][aeg>1880&aeg<1921][,set:="corpus"] %>%
+rbind(old2_unique[,.N,by=aeg][aeg>1880&aeg<1921][,set:="totals"]) %>%
+  ggplot(aes(x=aeg,y=N,fill=set))+
+  geom_bar(stat="identity",position="dodge")+
+  scale_fill_manual(values=c("black","grey"))+
+  theme_bw()
+  
+gridExtra::grid.arrange(p1,p2,nrow=1,ncol=2)
+
+#p1
+
+#p2
+
+
+#Eesti is correct now, there's no information on cities on Eesti examples
+#see2 <- less[str_detect(koht,"Eesti")]
+#see <- set_unique[!is.na(koht)&koht!=""][,.N,by=koht]
+
+   
+
+```
+
+
+```{r, echo=F,warning=F,message=F}
+
+transitions <- data.table(diffs2)[order(aeg)][,previtem:=lag(value),by=.(variable,Nime.normitud.kuju)][,decade:=round(aeg/10,0)*10]
+
+transitions[,firstbookincluded:=min(aeg),by=Nime.normitud.kuju]
+transitions[,decade_started:=round(firstbookincluded/10,0)*10,by=Nime.normitud.kuju]
+transitions2 <- transitions[decade_started+10>aeg]
+
+```
+
+---
+
+## Korpused
+
+```{r average uuskorp, echo=F,warning=F,message=F}
+
+diffs2%>%group_by(aeg,variable) %>% summarise(V1=mean(value,na.rm=T))%>%mutate(variable=factor(variable,levels=var4_seq))%>%
+  ggplot(aes(x=aeg,y=V1))+
+  geom_point(alpha=0.2)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  coord_cartesian(ylim=c(0,1))+
+  facet_wrap(~variable)#+
+  #labs(title=paste0("Variation of all"))
+```
+
+---
+
+## Korpused
+
+```{r detailed uuskorp, echo=F,warning=F,message=F}
+
+
+
+p<- diffs2%>%mutate(variable=factor(variable,levels=var4_seq)) %>%
+  #filter(!RRid%in%duplicate_ids)   %>%
+  #mutate(variable=as.character(variable))%>%
+  #filter(decade==1880)%>%
+  ggplot(aes(x=aeg,y=value,text=paste0(collection,"<br>",comptitle,"<br>",Nime.normitud.kuju,"<br>",value_uniques)))+
+  geom_point(stat="identity",alpha=0.2)+
+  #geom_rect(aes(xmin=1880,xmax=1920,ymin=0,ymax=1),fill="orange",alpha=0.02)+
+  geom_line(aes(group=RRid))+
+  #stat_smooth()+
+  facet_wrap(~variable)
+
+#ggplotly(p)
+p
+
+
+
+```
+
+
+
+---
+
+## 1880-1920 periood
+
+```{r periood, echo=F,warning=F,message=F}
+
+diffs2%>%mutate(variable=factor(variable,levels=var4_seq)) %>%
+  ggplot(aes(x=aeg,y=value,text=paste0(collection,"<br>",comptitle,"<br>",Nime.normitud.kuju,"<br>",value_uniques)))+
+  geom_point(stat="identity",alpha=0.2)+
+  geom_rect(aes(xmin=1880,xmax=1920,ymin=-0.2,ymax=1.2),fill="orange",alpha=0.002)+
+  geom_line(aes(group=RRid))+
+  #stat_smooth()+
+  facet_wrap(~variable)
+
+```
+
+
+---
+class: center, middle
+
+## Muutus toimus, <br> aga kuidas täpselt?
+
+Mehhanismid:
+- Murdetaust ja ümberasumine?
+- Sõnastikud ja ettekirjutus?
+- Hariduse roll, ametite roll
+- Kas inimesed muutusid või vahetusid?
+
+
+```{r get data , echo=F,warning=F,message=F,results='hide'}
+
+nc2 = st_read("../data/external/kih1897m_region.shp", stringsAsFactors = FALSE)
+
+```
+
+---
+
+## Korpuse ülevaade
+
+```{r travel and age, echo=F,warning=F,message=F}
+
+#installed https://github.com/IRkernel/repr
+#following https://github.com/ropensci/plotly/issues/1104
+#to get plotly properly working, otherwise was really slow
+
+nc3 <- st_transform(nc2, 4326) %>% 
+  st_transform(., '+proj=longlat +ellps=GRS80 +no_defs')
+
+#fwrite(merged_coords_ISIK_corp,"merged_coords_ISIK_corp_temp.tsv",sep="\t")
+
+merged_coords_ISIK_corp<- fread("bookdown/merged_coords_ISIK_corp_temp.tsv",sep="\t")
+#also jitter here
+merged_coords_ISIK_corp[,factor_name:=as.numeric(as.factor(ISIK.id))]
+merged_coords_ISIK_corp[,color_nr:=factor_name %% 8]
+merged_coords_ISIK_corp[,beginyear:=as.numeric(beginyear)]
+
+#summary(merged_coords[,.(beginyear)])
+#summary(merged_coords[,.(endyear)])
+#merged_coords[endyear>2000]
+#merged_coords[is.na(endyear)]
+
+forplot <- merged_coords_ISIK_corp[!is.na(endyear),.(year=unlist(beginyear:endyear),episode=paste0(unique(episode2))),by=.(places,ISIK.id,Nime.normitud.kuju,lon2,lat2,beginyear,endyear,color_nr)][,rnorm:=rnorm(1,0)/10,by=.(places,Nime.normitud.kuju,lat2,lon2)][,rnorm2:=rnorm(1,0)/10,by=.(places,Nime.normitud.kuju,lat2,lon2)][!is.na(year)][,.SD[1],by=.(year,ISIK.id)] #taking just the first one removes 1/3 of dataset
+
+
+#forplot[episode=="synd"]
+forplot[,birthyear:=min(year),by=ISIK.id]
+forplot[,age:=year-birthyear]
+
+events_sf <- forplot[!is.na(lat2)] %>%
+  #now adding jitter here too, might be a bit more in fact in these coordinates mb
+  mutate(lon2_jit=lon2+rnorm,lat2_jit=lat2+rnorm2)  %>%
+  st_as_sf(coords = c("lon2_jit", "lat2_jit"), crs = 4326)
+
+
+
+events_nc3 <- st_transform(events_sf, 4326) %>% 
+  st_transform(., '+proj=longlat +ellps=GRS80 +no_defs')# %>%
+res <- st_join(events_nc3, nc3)
+res <-
+  res %>%
+  mutate(color_nr=factor(color_nr)) %>%
+  filter(year<1930&year>1800)# %>%
+
+
+
+p <- ggplot() +
+  geom_sf(data=nc3,aes(),alpha=0.1) +
+  #geom_sf(data=events_sf) +
+  geom_sf(data=res,aes(text=paste(Nime.normitud.kuju,"<br>",episode,"<br>",KIHELKOND,"<br>",MAAKOND),frame=year,ids=ISIK.id,color=age)) +
+  #coord_sf(crs = 4326, datum = NA) +
+  #scale_fill_distiller("Area", palette = "Greens") +
+  ggtitle("Korpuse autorite elukäik") +
+  #facet_wrap(~year)+
+  coord_fixed(ratio=3.5/2)+
+  scale_color_gradient2( low = muted("green"), mid = "yellow",
+                         high = muted("red"), midpoint = 35, space = "Lab",
+                         na.value = "grey50", guide = "colourbar")+
+  theme_bw()
+
+ggplotly(p)%>%animation_opts(frame = 300,
+                       easing = "linear",
+                       redraw = FALSE)
+
+```
+
+---
+
+## Murdetaust
+
+```{r predictions murre, echo=F,warning=F,message=F}
+#write_csv(merged_murr,"merged_murr.tsv")
+merged_murr<- data.table(read_csv("merged_murr.tsv"))
+predictions_murre<-merged_murr[,median(mean),by=.(V7,type)][type%in%c("ää","om","ste","naene","üi")][,type:=factor(type,levels=c("ää","om","ste","naene","üi"))]%>%
+  ggplot(aes(x=type,y=V7))+
+  geom_tile(aes(fill=V1))+
+  scale_fill_gradient2( low = "darkred", mid = "yellow",
+                         high = "darkgreen", midpoint = 0.5, space = "Lab",
+                         na.value = "grey50", guide = "colourbar")+
+  scale_alpha(range=c(0,1), limits=c(1,1), na.value = 0)+
+  theme_bw()+
+  labs(x="",y="")
+
+ggplotly(predictions_murre)
+
+```
+
+
+---
+
+## Murdetaust
+
+```{r murre simple without time, echo=F,warning=F,message=F}
+
+#simple without time does not work...
+data.table(transitions%>%filter(aeg>1880&aeg<1920))[,round_value:=round(value,1)][,.N,.(predicted_murre,round_value,variable)][variable%in%c("ää","om","ste","naene","üi")][,variable:=factor(variable,levels=c("ää","om","ste","naene","üi"))][!is.na(predicted_murre)]%>%
+  ggplot(aes(x=round(predicted_murre,1),y=round_value))+
+  geom_tile(aes(fill=log(N)),colour = "white")+
+  #geom_tile(aes(fill = N),colour = "white")+
+  scale_fill_gradient(low = "white", high = "steelblue")+
+  #theme_bw()+
+  facet_wrap(~variable,scale="free_y")
+
+  #ggplot(aes()) +
+  #scale_y_continuous(labels = scales::percent)+
+  #geom_violin()+ geom_jitter(shape=16, position=position_jitter(0.2),alpha=0.2)+
+  #facet_wrap(~variable,scale="free_y")
+
+
+
+```
+
+
+
+---
+
+## Kirjastused
+
+```{r kirjastused, echo=F,warning=F,message=F,fig.width=9,fig.height=7}
+#,fig.asp=0.6
+#fwrite(old2,"old2_ERB_temp.tsv",sep="\t")
+
+
+
+old2[,comptitle:=tolower(comptitle)][,count_w:=str_count(comptitle,"w")][,count_v:=str_count(comptitle,"v")][,Ww_var:=count_v/(count_w+count_v)]
+kirjastused_old<-old2%>%filter(kirjastus!=""&!str_detect(kirjastus,"s.n"))%>%filter(aeg>1870&aeg<1930)%>%group_by(kirjastus,koht)%>%summarise(m=mean(Ww_var,na.rm=T),sd=sd(Ww_var,na.rm=T),minyear=min(aeg),maxyear=max(aeg),n_books_corpus=n())%>%
+  mutate(se = sd / sqrt(n_books_corpus),
+         lower.ci = m - qt(1 - (0.05 / 2), n_books_corpus - 1) * se,
+         upper.ci = m + qt(1 - (0.05 / 2), n_books_corpus - 1) * se)
+p3<-data.table(kirjastused_old)[order(-n_books_corpus)][1:50][,koht:=str_replace(koht,"%20linn","")][koht%in%c("Tallinn","Tartu")]%>%
+  ggplot(aes(x=minyear,y=m,text=paste0(kirjastus,"<br>maxyear:",maxyear)))+
+  geom_point()+
+  geom_errorbar(aes(ymin=m-se, ymax=m+se), width=.1)+
+  facet_wrap(~koht)+
+  labs(x="Asutamise aasta","W/V kasutus")
+
+#filter(kirjastus!="")%>%
+top_kirjastus <- data.table(kirjastused_old)[order(-n_books_corpus)][1:25]$kirjastus
+plotdata <- old2%>%filter(kirjastus%in%top_kirjastus)
+p4<-plotdata %>%
+  ggplot(aes(x=aeg,y=Ww_var))+
+  geom_point(alpha=0.2)+
+  #geom_errorbar(aes(ymin=m-se, ymax=m+se), width=.1)+
+  coord_cartesian(xlim=c(1880,1930))+
+  facet_wrap(~kirjastus)+
+  labs(x="Ilmumise aasta",y="W/V kasutus")
+#gridExtra::grid.arrange(p4,p3,ncol=1,nrow=2)
+subplot(p4,ggplotly(p3),nrows=2)
+
+```
+
+---
+
+## Trendid muutustes
+
+```{r average uuskorp again, echo=F,warning=F,message=F}
+
+diffs2%>%group_by(aeg,variable) %>% summarise(V1=mean(value,na.rm=T))%>%mutate(variable=factor(variable,levels=var4_seq))%>%
+  ggplot(aes(x=aeg,y=V1))+
+  geom_point(alpha=0.2)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  coord_cartesian(ylim=c(0,1))+
+  facet_wrap(~variable)#+
+  #labs(title=paste0("Variation of all"))
+```
+---
+
+## Trendid muutustes
+
+```{r average uuskorp with trends, echo=F,warning=F,message=F}
+#extra
+
+#maybe 5-year-mean,
+#above average speakers and below average speakers,
+#did first-timers go more or less towards some direction,
+#did old-timers go more or less towards some direction
+diffs2<-fread("bookdown/diffs2_temp.tsv",sep="\t")
+#what about age,and being on either side...
+diffs2[,meanthen:=mean(value,na.rm=T),by=.(fiveyear,variable)]
+save <- unique(diffs2[,.(fiveyear,meanthen,variable)])[order(fiveyear)][,next_value:=lead(meanthen),by=variable][,diff_global:=next_value-meanthen][diff_global>0.01,trend:="positive"][diff_global< (-0.01),trend:="negative"]
+diffs2<-merge(diffs2,save,on=c("variable","fiveyear"))
+diffs2[value>(meanthen+0.02)&trend=="positive",group:="leading"]
+diffs2[value<(meanthen-0.02)&trend=="negative",group:="following"]
+diffs2[group=="leading",value2:=value]
+diffs2[group=="following",value2:=-value]
+
+diffs_avg<-diffs2%>%group_by(aeg,variable) %>%filter(aeg>1880&aeg<1920)%>% summarise(V1=mean(value,na.rm=T))%>%mutate(variable=factor(variable,levels=var4_seq))
+
+  ggplot()+
+  geom_point(data=diffs_avg%>%mutate(variable=factor(variable,levels=var4_seq)),aes(x=aeg,y=V1),alpha=0.2)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  coord_cartesian(ylim=c(0,1))+
+  facet_wrap(~variable)+
+  geom_rect(data=save[!is.na(trend)]%>%filter(fiveyear>1879&fiveyear<1921)%>%mutate(variable=factor(variable,levels=var4_seq)),aes(xmin=fiveyear,xmax=fiveyear+5,ymin=0,ymax=1,fill=trend),alpha=0.3)#+#+
+  #labs(title=paste0("Variation of all"))
+```
+
+
+
+---
+
+## Juhib või järgib
+
+```{r, echo=F,warning=F,message=F}
+
+diffs2[!is.na(group)][aeg>1880&aeg<1920,.N,.(max_school,group,variable)] %>%mutate(variable=factor(variable,levels=var4_seq))%>% 
+  mutate(N = ifelse(group == 'following', -N, N)) %>% # reverse negative values
+  ggplot(aes(x = max_school, y = N)) +    
+  geom_area(aes(fill = N > 0),stat = 'identity') +
+  scale_fill_manual(values = c('red','green')) + # change colors
+  geom_smooth(method = "loess", se = F, col = "black") + 
+  facet_wrap(~ variable, scale = "free_x")
+
+
+
+
+```
+
+---
+
+## Juhib või järgib
+
+```{r, echo=F,warning=F,message=F}
+
+diffs2[!is.na(group)][,age2:=floor(age/5)*5][age<70][aeg>1880&aeg<1920,.N,.(age2,group,variable)]%>%mutate(variable=factor(variable,levels=var4_seq)) %>% 
+  mutate(N = ifelse(group == 'following', -N, N)) %>% # reverse negative values
+  ggplot(aes(x = age2, y = N)) +    
+  geom_area(aes(fill = N > 0),stat = 'identity') +
+  scale_fill_manual(values = c('red','green')) + # change colors
+  geom_smooth(method = "loess", se = F, col = "black") + 
+  facet_wrap(~ variable, scale = "free_x")
+
+
+```
+
+
+
+
+---
+
+## Haridus
+
+```{r education, echo=F,warning=F,message=F}
+
+transitions %>%
+  #mutate(variable=as.character(variable))%>%
+  filter(decade>1870&decade<1920)%>%
+  filter(variable=="ste")%>%
+  ggplot(aes(x=max_school,y=value))+
+  geom_jitter(stat="identity",alpha=0.2)+
+  #stat_smooth()+
+  facet_wrap(~decade)+
+  labs(title=paste0("Haridustase"),x="Haridustase (1-algharidus, 5-ülikool)",y="-ste/-sti kasutus")
+
+```
+
+---
+
+class:  left, middle
+
+## Kokkuvõttes
+
+- Metaandmed + korpus > tasakaalus korpus ?
+- Ühest seletust on raske leida
+- Töö on pooleli, aga mõtted on oodatud
