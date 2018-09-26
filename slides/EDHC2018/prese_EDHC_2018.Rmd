@@ -51,66 +51,20 @@ class: left, middle, inverse
 --
 
   - Language variation (color / colour)
-  
 --
+
   - Who did what when to whom, etc, as explanation
-  
 --
+
   - (e.g. Nevalainen & Raumolin-Brunberg 2012, Auer et al. 2015)
-  
 --
 
 - Process of language standardization 
-
 --
 
-  - Written Estonian ~1880-1920
-  
+  - Written Estonian spelling variants ~1880-1920
 --
 
----
-
-### Changes in linguistic variation
-
-- Why do you use some linguistic form? <!-- (e.g. color/colour) - with some image mb..-->
-
---
-
-  - Home dialect?
-  
---
-
-  - New friends in the city?
-  
---
-
-  - Traditions?
-  
---
-
-  - Dictionaries?
-  
---
-
---
-
-- Mechanisms of change
-
---
-
-  - Influence of dictionaries/prescription?
-  
---
-
-  - Who are the early adopters?
-  
---
-
-  - Population turnover or a change for everyone?
-  
---
-
-<!-- [do the older people eventually change or simply stop writing...?]-->
 
 ---
 
@@ -136,6 +90,7 @@ class:  left
 --
 
   - Urbanization, migration between dialects
+
 
 ---
 class: left
@@ -352,6 +307,51 @@ p2
 #since it can be expected that põhikirjad did not have that much of a role in there...
 ```
 
+(data.digar.ee)
+
+---
+
+### Changes in linguistic variation
+
+- Why do you use some linguistic form? <!-- (e.g. color/colour) - with some image mb..-->
+
+--
+
+  - Home dialect?
+  
+--
+
+  - New friends in the city?
+  
+--
+
+  - Traditions?
+  
+--
+
+  - Dictionaries?
+  
+--
+
+--
+
+- Mechanisms of change
+
+--
+
+  - Influence of dictionaries/prescription?
+  
+--
+
+  - Who are the early adopters?
+  
+--
+
+  - Population turnover or a change for everyone?
+  
+--
+
+<!-- [do the older people eventually change or simply stop writing...?]-->
 
 
 ---
@@ -464,7 +464,7 @@ class: left
 
 --
 
-- Usefulness of some text may vary in purpose
+- Usefulness of some text may vary by purpose
 
 --
 
@@ -535,13 +535,36 @@ transitions2 <- transitions[decade_started+10>aeg]
 
 ```
 
+---
+
+## Collection overview
+
+
+```{r simple annotation success, echo=F, warning=F, fig.height=6, fig.width=8}
+
+#ah, dam, need to exclude punctuation too, that'll be slower
+#with_finfo[nrows_nopunct>50]%>%
+#  ggplot(aes(x=aeg,y=prop_unsolved))+
+#  geom_point(alpha=0.1)
+with_finfo<-fread("bookdown/with_finfo_temp.tsv",sep="\t")
+
+#here without punctuation
+with_finfo[nrows_nopunct>50][collection!="vanakorp"]%>%
+  ggplot(aes(x=aeg,y=prop_nopunct_unsolved))+
+  geom_vline(aes(xintercept=1871),colour="red",alpha=0.5)+
+  geom_vline(aes(xintercept=1920),colour="blue",alpha=0.5)+
+  geom_point(alpha=0.1)+
+  labs(y="Proportion identified with EstNLTK", x="Time")
+
+```
+
 
 
 ---
 
 ## Metainformation on items
 
-National Library Open Data (data.digar.ee !)
+<img src="data.digar.today.png" width="30%" height="30%" align="middle">
 
 Estonian National Bibliography
 - publisher, city, date
@@ -551,7 +574,6 @@ Estonian National Bibliography
 - topics
 - etc
 
-<center><img src="data.digar.scr.png" width="60%" height="60%" align="middle"></center>
 
 <!--- years of work, or even generations, when counting the many bibliographies that have been used for it. ![](data.digar.scr.png){:height="50%" width="50%"}
 - what is now great though, is that it is added together in one place...-->
@@ -815,7 +837,7 @@ ggplotly(p)
 
 ```
 
-(Uiboaed & Kyrolainen 2015)
+(Lindström et al. 2015)
 
 ---
 class: inverse, humanities-slide 
@@ -1194,13 +1216,13 @@ etc--->
 
 ### What can we conclude?
 
-- Some possible inferences
+- Some initial inferences
 
   - Prescription/grammars influenced language use a lot
 
   - Prescription worked always when it was aligned with youth and large cities.
 
-  - If youth or large cities showed an opposite trend then prescription was sometimes unsuccessful.
+  - In cases prescription did not work, it had opposition from youth or large cities.
 
   - In some cases, prescription also followed existing trends among youths or in cities.
 
@@ -1229,7 +1251,7 @@ but for this databases need to be compiled and available--->
 
 - Gathering it can be simple if this has option has been kept in mind by maintainers (e.g. ids and links in ENB).
 
-  - But may depend on half-finished sets and hacks for the other part.
+  - But may depend on half-finished sets and hacks for the others.
 
 - As long as they are open they can be reused. ;)
 
