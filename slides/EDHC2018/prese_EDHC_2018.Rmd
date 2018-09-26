@@ -453,7 +453,7 @@ class: left
 --
 
   - Digar, Literary Museum, E-books, Wikisource, Dspace etc
-  
+
 --
 
 - Vary in quality and amount of editing
