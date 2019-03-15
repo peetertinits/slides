@@ -1,0 +1,519 @@
+---
+title: "Natuke kirjakeele ühtlustumisest"
+subtitle: ""
+author: "Peeter Tinits"
+date: "DH-labs<br>Tartu, 14.03.2018"
+output:
+  xaringan::moon_reader:
+    css: ["default", "mythemeDHlabs.css"]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+
+#https://coolors.co/005368-20776a-f7f7f7-0f0f0f-e0b64c
+
+library(here)
+source(here("/code/0_libraries.R"))
+
+library(zoo)
+
+options(htmltools.dir.version = FALSE)
+with_autor_data<-fread(here("/data/interim/with_autor_data_temp.tsv"),sep="\t")
+diffs<-fread(here("code/old_code/temp_data/diffs_temp.tsv"),sep="\t")
+diffs2<-fread(here("code/old_code/temp_data/diffs2_temp.tsv"),sep="\t")
+
+diffs2_m<-fread(here("code/old_code/temp_data/diffs2_m_temp.tsv"),sep="\t")
+diffs2_m[!is.na(pprescribed),prescribed:=pprescribed]
+
+works <- fread(here("/data/processed/ERB_works_v_29.07.2018.tsv"),sep="\t")
+works[,aeg:=as.numeric(aeg)]
+
+```
+
+class: middle left
+
+## Doktoritöö küsimused
+<!-- there is a problem in linguistics --> 
+
+- Kuidas toimus üleminek mitte väga kirjakeelsest rahvast kirjakeelseks rahvaks 19. saj lõpul?
+
+--
+
+  - Täpsemalt: Kuidas toimus keelepruukide ühtlustumine?
+  
+--
+
+- Mitmeti lingvistiline küsimus, aga mõneti just keeleväline
+
+--
+
+---
+
+class:  left
+
+### Taust
+
+
+- Tol ajal toimus päris palju
+
+--
+
+  - Suur ränne maalt linna ja üle maa (raudteed)
+
+--
+
+      - Eri kujudega keeled segunevad
+
+--
+
+  - Hariduse tõus
+
+--
+
+  - Isiklik taust suures kogukonnas (murdetaust)
+
+--
+
+  - Uued grupid, kirjavahetused
+
+--
+
+  - Grammatikad ja ettekirjutused
+
+--
+
+- Milline neist kõige olulisemalt mõjutas?
+
+  - Kuidas protsess kulges?
+
+
+
+<!--funded by the users etc --> 
+
+```{r makesimple histogram,echo=F,warning=F,include=F}
+p<- works[aeg< 2020&aeg>1700] %>%
+  ggplot(aes(x=aeg))+
+  geom_histogram(binwidth=1) + 
+  annotate("rect", xmin=1880, xmax=1920, ymin=0, ymax=130, alpha=0.2, fill="orange") +
+  #geom_rect(aes(xmin=1880,xmax=1920,ymin=0,ymax=1000),alpha=0.3,fill="orange")+
+  theme_bw()+
+  labs(title="Number of publications per year",ylab="",xlab="")
+
+
+  
+```
+
+
+---
+
+## Keeleline variatsioon
+
+<!---2 competing forms: e.g. nõu & nõuu [ *advice* ]--->
+
+```{r, echo=F,warning=F,message=F, fig.width=10,fig.height=6}
+#üks näidisgraafik.
+
+
+#nrow(genres_melt[genre_uniques=="iluk"][aeg>1880&aeg<1920])
+
+p1<-diffs%>%
+  filter(aeg>1800&aeg<1930)%>%
+  #filter(collection=="vanakorp"&decade<1919)%>%
+  filter(variable=="õuu")%>%
+  ggplot(aes(x=aeg,y=value, text =paste0("title:", Nime.normitud.kuju, "\ntitle:", comptitle, "\n", value, "\n", value_uniques)))+
+  geom_jitter(alpha=0.2)+
+  #annotate("rect", xmin=1880, xmax=1920, ymin=0, ymax=1, alpha=0.2, fill="orange") +
+  #  stat_smooth(se = FALSE)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  #facet_wrap(~variable)+
+  labs(title=paste0("õuu/õu"))
+
+p2<-diffs%>%
+  filter(aeg>1800&aeg<1930)%>%
+  filter(variable=="õuu")%>%
+  group_by(aeg,variable) %>%
+  summarise(value=mean(value,na.rm=T))%>%
+  ggplot(aes(x=aeg,y=value))+
+  geom_point(alpha=0.2)+
+  ylim(0,1)+
+  #stat_smooth(se = FALSE)+
+  stat_smooth(method="gam", formula = y ~ s(x, k = 50), size = 1,se=F)+
+  #facet_wrap(~variable)+
+  labs(title=paste0("õuu/õu"))
+
+
+s1 <-ggplotly(p1)
+s2 <-ggplotly(p2)
+
+subplot(s1,s2)
+
+
+```
+
+
+<!--- UT corpus
+- Snippets from ~100 texts per decade
+- 1890s, 1900s, 1910s--->
+
+```{r simple vanakorp, echo=F,warning=F,include=F}
+var <- colnames(with_autor_data)[30:46]
+var2 <- var[c(1:4,6:13,15:17)]
+var2_seq <- var2[c(1,11,12,8,5,9,4,3,6,2,14,13,10,7,15)]
+var3 <- colnames(with_autor_data)[47:63]
+var4 <- var3[c(1:4,6:13,15:17)]
+var4_seq <- str_replace(var4[c(1,11,12,8,5,9,4,3,6,2,14,13,10,7,15)],"_uniques","")
+
+
+#p<- melt(with_autor_data,id.vars = c("decade","RRid","collection"),measure.vars=var2)%>%mutate(variable=factor(variable,levels=var2_seq))%>%filter(collection=="vanakorp"&decade<1919)%>%mutate(Ww_var=NA)%>%filter(!variable%in%c("nnud_var","om_var","herra_var"))%>%#filter(variable!="Ww_var")%>%
+p <- diffs%>%mutate(variable=factor(variable,levels=var4_seq))%>%filter(collection=="vanakorp"&decade<1919)%>%filter(!variable%in%c("nnud","om","herra"))%>%
+  group_by(decade,variable)%>%summarise(mean=mean(value,na.rm=T))%>%mutate(variable=factor(variable,levels=var4_seq))%>%
+  ggplot(aes(x=decade,y=mean))+
+  geom_bar(alpha=0.8,stat="identity")+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  facet_wrap(~variable)+
+  #labs(title=paste0("Variation of ",var[i]))+
+  theme_bw()
+
+#ggplotly(p)
+p
+
+```
+
+
+<!-- so, while balanced corpora are nice, what we'd like in historical sociolinguistics is like this --> 
+<!-- - and when we consider the set of texts, the balancing really does not give us much,
+- could possibly connect with line vanakorp if author is the same??? --> 
+
+```{r detailed vanakorp, echo=F,warning=F,include=F}
+
+diffs%>%mutate(variable=factor(variable,levels=var4_seq))%>%
+  #filter(collection=="vanakorp"&decade<1919)%>%
+  filter(!variable%in%c("nnud","om","herra"))%>%#filter(variable!="Ww_var")%>%
+  ggplot(aes(x=aeg,y=value, text =paste0("title:", Nime.normitud.kuju, "\ntitle:", comptitle, "\n", value, "\n", value_uniques)))+
+  geom_point(alpha=0.2)+
+  annotate("rect", xmin=1880, xmax=1920, ymin=0, ymax=1, alpha=0.2, fill="orange") +
+  #stat_smooth()+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 10), size = 1)+
+  facet_wrap(~variable)#+
+  #labs(title=paste0("Variation of selected"))
+#ggplotly(p)
+```
+
+---
+
+class: left
+
+## Andmete koondamine
+
+- Kogusin hulga tekste (kokku ~5000 1800-1940)
+
+--
+
+- Rahvusbibliograafia metaandmed trükiste kohta
+
+--
+
+- Autorite isikuloolised andmed, kraapisin ISIKust
+
+--
+
+  - Sünnikohad ja murdealad kohanimeandmebaasist ja murdekaardilt
+
+--
+
+- Loenduste põhjal siserände andmed
+
+--
+
+- Varasematest uuringutest info grammatikate ja soovituste kohta
+
+---
+
+## Tekstid
+
+```{r corpus in context, echo=F,warning=F,message=F,fig.width=10}
+#,fig.asp=0.5
+
+set_unique<-fread(here("code/old_code/temp_data/set_unique_temp.tsv"),sep="\t")  
+
+
+old2<- fread(here("code/old_code/temp_data/old2_ERB_temp.tsv"),sep="\t")
+old2_unique <- unique(old2[,.(aeg,RRid)])
+
+p1 <- set_unique[,.N,by=aeg][,set:="corpus"] %>%
+#rbind(old2_unique[,.N,by=aeg][,set:="totals"]) %>%
+  ggplot(aes(x=aeg,y=N,fill=set))+
+  geom_bar(stat="identity",position="dodge")+
+  scale_fill_manual(values=c("black","grey"))+
+  annotate("rect", xmin=1880, xmax=1920, ymin=0, ymax=130, alpha=0.2, fill="orange") +
+  theme_bw()+
+  labs(title="Texts in corpus by year",ylab="",xlab="")
+
+  
+
+
+p2 <- set_unique[,.N,by=aeg][aeg>1880&aeg<1921][,set:="corpus"] %>%
+rbind(old2_unique[,.N,by=aeg][aeg>1880&aeg<1921][,set:="totals"]) %>%
+  ggplot(aes(x=aeg,y=N,fill=set))+
+  geom_bar(stat="identity",position="dodge")+
+  scale_fill_manual(values=c("black","grey"))+
+  theme_bw()+
+  labs(title="Texts in corpus vs texts published",ylab="",xlab="")
+
+  
+gridExtra::grid.arrange(p1,p2,nrow=1,ncol=2)
+
+#p1
+
+#p2
+
+
+#Eesti is correct now, there's no information on cities on Eesti examples
+#see2 <- less[str_detect(koht,"Eesti")]
+#see <- set_unique[!is.na(koht)&koht!=""][,.N,by=koht]
+
+   
+
+```
+
+
+```{r, echo=F,warning=F,message=F}
+
+transitions <- data.table(diffs2)[order(aeg)][,previtem:=lag(value),by=.(variable,Nime.normitud.kuju)][,decade:=round(aeg/10,0)*10]
+
+transitions[,firstbookincluded:=min(aeg),by=Nime.normitud.kuju]
+transitions[,decade_started:=round(firstbookincluded/10,0)*10,by=Nime.normitud.kuju]
+transitions2 <- transitions[decade_started+10>aeg]
+
+```
+
+
+
+```{r simple annotation success, echo=F, warning=F, fig.height=6, fig.width=8, include =F}
+
+#ah, dam, need to exclude punctuation too, that'll be slower
+#with_finfo[nrows_nopunct>50]%>%
+#  ggplot(aes(x=aeg,y=prop_unsolved))+
+#  geom_point(alpha=0.1)
+with_finfo<-fread(here("code/old_code/temp_data/with_finfo_temp.tsv"),sep="\t")
+
+#here without punctuation
+with_finfo[nrows_nopunct>50][collection!="vanakorp"]%>%
+  ggplot(aes(x=aeg,y=prop_nopunct_unsolved))+
+  geom_vline(aes(xintercept=1871),colour="red",alpha=0.5)+
+  geom_vline(aes(xintercept=1920),colour="blue",alpha=0.5)+
+  geom_point(alpha=0.1)+
+  labs(y="Proportion identified with EstNLTK", x="Time")
+
+```
+
+
+<!---So altogether, referring to the previous available corpus we get a more complete picture,
+with some nice trends in there...
+
+first img of old picture,
+
+then img of new picture of averages...--->
+
+
+```{r simple vanakorp2, echo=F,warning=F,include=F}
+var <- colnames(with_autor_data)[30:46]
+var2 <- var[c(1:4,6:13,15:17)]
+var2_seq <- var2[c(1,11,12,8,5,9,4,3,6,2,14,13,10,7,15)]
+var3 <- colnames(with_autor_data)[47:63]
+var4 <- var3[c(1:4,6:13,15:17)]
+var4_seq <- str_replace(var4[c(1,11,12,8,5,9,4,3,6,2,14,13,10,7,15)],"_uniques","")
+
+
+p<- melt(with_autor_data,id.vars = c("decade","RRid","collection"),measure.vars=var2)%>%mutate(variable=factor(variable,levels=var2_seq))%>%filter(collection=="vanakorp"&decade<1919)%>%mutate(Ww_var=NA)%>%filter(!variable%in%c("nnud_var","om_var","herra_var"))%>%#filter(variable!="Ww_var")%>%
+  group_by(decade,variable)%>%summarise(mean=mean(value,na.rm=T))%>%mutate(variable=factor(variable,levels=var2_seq))%>%
+  ggplot(aes(x=decade,y=mean))+
+  geom_bar(alpha=0.8,stat="identity")+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  facet_wrap(~variable)+
+  #labs(title=paste0("Variation of ",var[i]))+
+  theme_bw()
+
+#ggplotly(p)
+p
+
+```
+
+
+---
+
+## Keskmised
+
+```{r average uuskorp, echo=F,warning=F,message=F}
+
+diffs2%>%group_by(aeg,variable) %>% summarise(V1=mean(value,na.rm=T))%>%mutate(variable=factor(variable,levels=var4_seq))%>%filter(!variable%in%c("nnud","om","herra"))%>%
+  ggplot(aes(x=aeg,y=V1))+
+  geom_point(alpha=0.2)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  coord_cartesian(ylim=c(0,1))+
+  facet_wrap(~variable)#+
+  #labs(title=paste0("Variation of all"))
+```
+
+
+```{r detailed uuskorp, echo=F,warning=F,message=F,eval=F}
+
+
+
+p<- diffs2%>%mutate(variable=factor(variable,levels=var4_seq))%>%filter(!variable%in%c("nnud","om","herra")) %>%
+  #filter(!RRid%in%duplicate_ids)   %>%
+  #mutate(variable=as.character(variable))%>%
+  #filter(decade==1880)%>%
+  ggplot(aes(x=aeg,y=value,text=paste0(collection,"<br>",comptitle,"<br>",Nime.normitud.kuju,"<br>",value_uniques)))+
+  geom_point(stat="identity",alpha=0.2)+
+  #geom_rect(aes(xmin=1880,xmax=1920,ymin=0,ymax=1),fill="orange",alpha=0.02)+
+  geom_line(aes(group=RRid))+
+  #stat_smooth()+
+  facet_wrap(~variable)
+
+#ggplotly(p)
+p
+
+
+
+```
+
+
+
+---
+
+<!--And in addition to that 
+
+so we have some nice changes,
+
+why did they happen, well the first question we want - 
+
+can they be associated with intentional activities,
+
+picture adding together with prescription,,
+
+
+and indeed it looks like they can, in fact in many occasions these lines are even exact turning points in usage...--->
+
+## Protsess
+
+```{r prescription data, echo=F,warning=F}
+prescriptions <- fread(here("/data/raw/prescriptions_database.csv"),sep="\t", na.strings=c("","NA"))
+#unique(save[comments!="SKIP",.(year,variable,direction,standardized)])
+prescriptions <- prescriptions[is.na(skip)]
+prescriptions <- na.locf(prescriptions,na.rm=F)
+
+
+#prescriptions[year==1901]
+#prescriptions[variable=="ää"]
+
+
+#unique(prescriptions$variable)
+
+#prescriptions[variable%in%c("ää","auu","ste","te","herra","ial","kuda","käsa","eila","naene","õuu","üi","Ww")]
+
+save <-prescriptions[variable%in%c("ää","auu","ste","te","herra","ial","kuda","käsa","eila","naene","õuu","üi","Ww")]
+
+
+#1886 mixed type can be good too, can't distinguish au and auu...
+#1908 - some particular words as exceptions, can check for them or smth..
+#save[standardized=="EXCEPTION",.(year,variable,advice,direction,standardized)]
+
+#save[standardized=="ALL",.(year,person,variable,direction,standardized)]
+save[direction=="standard",value:=1]
+save[direction=="nonstandard",value:=0]
+
+prescription_data<-unique(save[standardized=="ALL",.(year,person,variable,direction,standardized,value)])[standardized=="ALL",.(value=mean(value,na.rm=T)),by=.(year,variable)][!value%in%c(0,1),value:=NA]
+
+
+```
+
+```{r plot w prescription, echo=F,warning=F}
+
+diffs2%>%
+  #group_by(aeg,variable) %>%
+  rename(V1=value)%>%
+  #summarise(V1=mean(value,na.rm=T))%>%
+  mutate(variable=factor(variable,levels=var4_seq))%>%
+  filter(!variable%in%c("nnud","om","herra"))%>%
+  ggplot(aes(x=aeg,y=V1))+
+  geom_point(alpha=0.2)+
+  geom_vline(data=prescription_data%>%filter(!variable%in%c("nnud","om","herra"))%>%mutate(variable=factor(variable,levels=var4_seq)),aes(xintercept=as.numeric(year),colour=factor(value)))+
+  stat_smooth(method="gam", formula = y ~ s(x, k = 50), size = 1)+
+  coord_cartesian(ylim=c(0,1))+
+  facet_wrap(~variable)+
+  #labs(title="")+
+  scale_colour_manual(name = "Intention",
+                     values = c("0" = "#D55E00",
+                                  "1" = "#0072B2",
+                                  "NA" = "#000000"),
+                     labels = c("Down", "Up", "Mixed"))+
+  guides(colour=FALSE)
+
+```
+
+
+<!--- so, we can zoom in the areas where there seems to be directed changes, like the ones here...
+and image with trends too maybe?--->
+
+
+```{r plot w phases, echo=F,warning=F,include=F}
+
+
+diffs2_m[,phasestart:=min(aeg),by=.(variable,phase)]
+diffs2_m[,phaseend:=max(aeg),by=.(variable,phase)]
+
+rects <- unique(diffs2_m[!is.na(phase)&phase!="",.(variable,phase,phasestart,phaseend,prescribed)])
+
+
+data_avgs<-diffs2_m%>%group_by(aeg,variable) %>% summarise(V1=mean(value,na.rm=T))%>%mutate(variable=factor(variable,levels=var4_seq))%>%filter(!variable%in%c("nnud","om","herra"))
+
+
+ggplot()+
+  geom_point(data=data_avgs,aes(x=aeg,y=V1),alpha=0.2)+
+  geom_vline(data=prescription_data%>%mutate(variable=factor(variable,levels=var4_seq))%>%filter(!variable%in%c("nnud","om","herra")),aes(xintercept=as.numeric(year),colour=factor(value)))+
+  geom_rect(data=rects%>%mutate(variable=factor(variable,levels=var4_seq)),aes(xmin=phasestart,xmax=phaseend,ymin=0,ymax=1, fill=as.character(prescribed)),alpha=0.3)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  coord_cartesian(ylim=c(0,1))+
+  facet_wrap(~variable)+
+  #labs(title=paste0("Variation of all"))
+  guides(colour=FALSE,fill=FALSE)+
+  scale_color_manual(name = "Intention",
+                     values = c("0" = "#D55E00",
+                                  "1" = "#0072B2",
+                                  "NA" = "#000000"),
+                     labels = c("Down", "Up", "Mixed"))+
+  scale_fill_manual(name = "Prescribed",
+                     values = c("0" = "#CC79A7",
+                                  "0.5" = "#999999",
+                                  "1" = "#56B4E9"),
+                     labels = c("Down", "Up", "Mixed"))
+
+data_avgs2<-diffs2_m[!is.na(phase)]%>%group_by(aeg,variable) %>% summarise(V1=mean(value,na.rm=T))%>%mutate(variable=factor(variable,levels=var4_seq))%>%filter(!variable%in%c("nnud","om","herra"))
+
+p_phases<-ggplot()+
+  geom_point(data=data_avgs2,aes(x=aeg,y=V1),alpha=0.2)+
+  geom_vline(data=prescription_data%>%filter(!variable%in%c("nnud","om","herra"))%>%filter(year>1880),aes(xintercept=as.numeric(year),colour=factor(value)))+
+  geom_rect(data=rects[!is.na(phase)],aes(xmin=phasestart,xmax=phaseend,ymin=0,ymax=1, fill=phase),alpha=0.3)+
+  #stat_smooth(method="gam", formula = y ~ s(x, k = 5), size = 1)+
+  coord_cartesian(ylim=c(0,1))+
+  facet_wrap(~variable,scales="free_x")+
+  labs(title=paste0("Variation of all"))
+#ggsave("p_phases.png",p_phases)
+  
+#not plotting p_phases zoom-in now...
+
+```
+
+
+---
+class: center, middle, inverse
+
+## Aitäh.
